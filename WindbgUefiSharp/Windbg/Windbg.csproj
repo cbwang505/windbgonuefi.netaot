@@ -1,0 +1,287 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <Optimize>false</Optimize>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>Windbg</RootNamespace>
+    <DefineConstants>EFI;TARGET_64BIT;TARGET_AMD64;INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
+    <PublishAot>true</PublishAot>
+    <IlcSystemModule>Windbg</IlcSystemModule>
+    <EntryPointSymbol>EfiMain</EntryPointSymbol>
+    <LinkerSubsystem>EFI_RUNTIME_DRIVER</LinkerSubsystem>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
+    <LangVersion>latest</LangVersion>
+    <StackTraceSupport>true</StackTraceSupport>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <FileAlignment>4096</FileAlignment>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <FileAlignment>4096</FileAlignment>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Corlib\Internal\Runtime\ArchitectureConstants.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ArgumentRegisters.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ArrayTypesConstants.cs" />
+    <Compile Include="Corlib\Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
+    <Compile Include="Corlib\Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
+    <Compile Include="Corlib\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs" />
+    <Compile Include="Corlib\Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
+    <Compile Include="Corlib\Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
+    <Compile Include="Corlib\Internal\Runtime\CompilerServices\Unsafe.cs" />
+    <Compile Include="Corlib\Internal\Runtime\DehydratedDataCommand.cs" />
+    <Compile Include="Corlib\Internal\Runtime\DispatchMap.cs" />
+    <Compile Include="Corlib\Internal\Runtime\DynamicModule.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EEInterfaceInfo.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeElementType.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeField.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeFlags.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeKind.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeOptionalFieldTag.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeRareFlags.cs" />
+    <Compile Include="Corlib\Internal\Runtime\EETypeRef.cs" />
+    <Compile Include="Corlib\Internal\Runtime\FloatArgumentRegisters.cs" />
+    <Compile Include="Corlib\Internal\Runtime\GCStaticRegionConstants.cs" />
+    <Compile Include="Corlib\Internal\Runtime\GC_ALLOC_FLAGS.cs" />
+    <Compile Include="Corlib\Internal\Runtime\GenericVariance.cs" />
+    <Compile Include="Corlib\Internal\Runtime\IatAwarePointer.T.cs" />
+    <Compile Include="Corlib\Internal\Runtime\IatAwareRelativePointer.T.cs" />
+    <Compile Include="Corlib\Internal\Runtime\IDynamicCastableSupport.cs" />
+    <Compile Include="Corlib\Internal\Runtime\IndirectionConstants.cs" />
+    <Compile Include="Corlib\Internal\Runtime\M128A.cs" />
+    <Compile Include="Corlib\Internal\Runtime\MethodTable.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ModuleInfoFlags.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ModuleInfoRow.cs" />
+    <Compile Include="Corlib\Internal\Runtime\NativeFormat\NativePrimitiveDecoder.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ObjHeader.cs" />
+    <Compile Include="Corlib\Internal\Runtime\Pointer.cs" />
+    <Compile Include="Corlib\Internal\Runtime\Pointer.T.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ReadyToRunHeader.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ReadyToRunHeaderConstants.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ReadyToRunSectionType.cs" />
+    <Compile Include="Corlib\Internal\Runtime\RelativePointer.cs" />
+    <Compile Include="Corlib\Internal\Runtime\RelativePointer.T.cs" />
+    <Compile Include="Corlib\Internal\Runtime\ReturnBlock.cs" />
+    <Compile Include="Corlib\Internal\Runtime\RuntimeHelperKind.cs" />
+    <Compile Include="Corlib\Internal\Runtime\TransitionBlock.cs" />
+    <Compile Include="Corlib\Internal\Runtime\TypeCast.cs" />
+    <Compile Include="Corlib\Internal\Runtime\TypeManagerHandle.cs" />
+    <Compile Include="Corlib\Internal\Runtime\WellKnownEETypes.cs" />
+    <Compile Include="Corlib\Internal\Runtime\WritableData.cs" />
+    <Compile Include="Corlib\Internal\TypeSystem\ExceptionStringID.cs" />
+    <Compile Include="Corlib\System\Action.cs" />
+    <Compile Include="Corlib\System\AppContext.cs" />
+    <Compile Include="Corlib\System\Array.cs" />
+    <Compile Include="Corlib\System\Attribute.cs" />
+    <Compile Include="Corlib\System\AttributeUsageAttribute.cs" />
+    <Compile Include="Corlib\System\BitConverter.cs" />
+    <Compile Include="Corlib\System\BitHelpers.cs" />
+    <Compile Include="Corlib\System\Boolean.cs" />
+    <Compile Include="Corlib\System\Byte.cs" />
+    <Compile Include="Corlib\System\Char.cs" />
+    <Compile Include="Corlib\System\CLSCompliantAttribute.cs" />
+    <Compile Include="Corlib\System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="Corlib\System\Collections\Generic\IEnumerator.cs" />
+    <Compile Include="Corlib\System\Collections\Generic\Linq.cs" />
+    <Compile Include="Corlib\System\Collections\Generic\List.cs" />
+    <Compile Include="Corlib\System\Collections\Generic\Queue.cs" />
+    <Compile Include="Corlib\System\Console.cs" />
+    <Compile Include="Corlib\System\ConsoleColor.cs" />
+    <Compile Include="Corlib\System\ConsoleKey.cs" />
+    <Compile Include="Corlib\System\ConsoleKeyInfo.cs" />
+    <Compile Include="Corlib\System\ConsoleKeyState.cs" />
+    <Compile Include="Corlib\System\ConsoleModifiers.cs" />
+    <Compile Include="Corlib\System\Convert.cs" />
+    <Compile Include="Corlib\System\DateTime.cs" />
+    <Compile Include="Corlib\System\Delegate.cs" />
+    <Compile Include="Corlib\System\Diagnostics\ConditionalAttribute.cs" />
+    <Compile Include="Corlib\System\Diagnostics\Debug.cs" />
+    <Compile Include="Corlib\System\Diagnostics\Process.cs" />
+    <Compile Include="Corlib\System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="Corlib\System\Double.cs" />
+    <Compile Include="Corlib\System\Drawing\Color.cs" />
+    <Compile Include="Corlib\System\Drawing\Image.cs" />
+    <Compile Include="Corlib\System\Drawing\Point.cs" />
+    <Compile Include="Corlib\System\Drawing\Rectangle.cs" />
+    <Compile Include="Corlib\System\Drawing\Size.cs" />
+    <Compile Include="Corlib\System\EETypePtr.cs" />
+    <Compile Include="Corlib\System\Enum.cs" />
+    <Compile Include="Corlib\System\Environment.cs" />
+    <Compile Include="Corlib\System\EventArgs.cs" />
+    <Compile Include="Corlib\System\EventHandler.cs" />
+    <Compile Include="Corlib\System\Exception.cs" />
+    <Compile Include="Corlib\System\FlagsAttribute.cs" />
+    <Compile Include="Corlib\System\Func.cs" />
+    <Compile Include="Corlib\System\Globalization\CharUnicodeInfo.cs" />
+    <Compile Include="Corlib\System\Globalization\CultureInfo.cs" />
+    <Compile Include="Corlib\System\IDisposable.cs" />
+    <Compile Include="Corlib\System\Int16.cs" />
+    <Compile Include="Corlib\System\Int32.cs" />
+    <Compile Include="Corlib\System\Int64.cs" />
+    <Compile Include="Corlib\System\IntPtr.cs" />
+    <Compile Include="Corlib\System\Math.cs" />
+    <Compile Include="Corlib\System\MathF.cs" />
+    <Compile Include="Corlib\System\MulticastDelegate.cs" />
+    <Compile Include="Corlib\System\Nullable.cs" />
+    <Compile Include="Corlib\System\Object.cs" />
+    <Compile Include="Corlib\System\ObsoleteAttribute.cs" />
+    <Compile Include="Corlib\System\ParamArrayAttribute.cs" />
+    <Compile Include="Corlib\System\PlatformNotSupportedException.cs" />
+    <Compile Include="Corlib\System\Random.cs" />
+    <Compile Include="Corlib\System\ReflectionBlockedAttribute.cs" />
+    <Compile Include="Corlib\System\Reflection\DefaultMemberAttribute.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\DataDirectory.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\DllCharacteristicsType.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\DOSHeader.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\FileHeader.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\NtHeaders64.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\OptionalHeaders64.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\SectionHeader.cs" />
+    <Compile Include="Corlib\System\Reflection\PortableExecutable\SubSystemType.cs" />
+    <Compile Include="Corlib\System\RuntimeExceptionHelpers.cs" />
+    <Compile Include="Corlib\System\RuntimeFieldHandle.cs" />
+    <Compile Include="Corlib\System\RuntimeMethodHandle.cs" />
+    <Compile Include="Corlib\System\RuntimeType.cs" />
+    <Compile Include="Corlib\System\RuntimeTypeHandle.cs" />
+    <Compile Include="Corlib\System\Runtime\CachedInterfaceDispatch.cs" />
+    <Compile Include="Corlib\System\Runtime\ClassLibFunctionId.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\CallConvCdecl.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\CallConvFastcall.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\CallConvStdcall.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\CallConvThiscall.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\ExtensionAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\IsVolatile.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\RawCalliHelper.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
+    <Compile Include="Corlib\System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\DispatchCellInfo.cs" />
+    <Compile Include="Corlib\System\Runtime\DispatchCellType.cs" />
+    <Compile Include="Corlib\System\Runtime\DispatchResolve.cs" />
+    <Compile Include="Corlib\System\Runtime\EH.cs" />
+    <Compile Include="Corlib\System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="Corlib\System\Runtime\InternalCalls.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\CallingConvention.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\DllImportAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\MemoryMarshal.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\StructLayoutAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\SuppressGCTransition.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\InteropServices\UnmanagedType.cs" />
+    <Compile Include="Corlib\System\Runtime\NonVersionableAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\REGDISPLAY.cs" />
+    <Compile Include="Corlib\System\Runtime\RhFailFastReason.cs" />
+    <Compile Include="Corlib\System\Runtime\RuntimeExportAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\RuntimeImportAttribute.cs" />
+    <Compile Include="Corlib\System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="Corlib\System\Runtime\TypeCast.cs" />
+    <Compile Include="Corlib\System\SByte.cs" />
+    <Compile Include="Corlib\System\Single.cs" />
+    <Compile Include="Corlib\System\String.cs" />
+    <Compile Include="Corlib\System\System.SR.cs" />
+    <Compile Include="Corlib\System\Threading\Monitor.cs" />
+    <Compile Include="Corlib\System\TimeSpan.cs" />
+    <Compile Include="Corlib\System\Tuple.cs" />
+    <Compile Include="Corlib\System\Type.cs" />
+    <Compile Include="Corlib\System\UInt16.cs" />
+    <Compile Include="Corlib\System\UInt32.cs" />
+    <Compile Include="Corlib\System\UInt64.cs" />
+    <Compile Include="Corlib\System\UIntPtr.cs" />
+    <Compile Include="Corlib\System\ValueTuple.cs" />
+    <Compile Include="Corlib\System\ValueType.cs" />
+    <Compile Include="Corlib\System\Void.cs" />
+    <Compile Include="Corlib\System\Windows\Forms\Control.cs" />
+    <Compile Include="Corlib\System\Windows\Forms\MouseButtons.cs" />
+    <Compile Include="EfiSharp\Console\EFIKeyNotifyHandle.cs" />
+    <Compile Include="EfiSharp\Console\EFIOutputRequiredChars.cs" />
+    <Compile Include="EfiSharp\Console\EFI_INPUT_KEY.cs" />
+    <Compile Include="EfiSharp\Console\EFI_KEY_DATA.cs" />
+    <Compile Include="EfiSharp\Console\EFI_KEY_STATE.cs" />
+    <Compile Include="EfiSharp\Console\EFI_KEY_TOGGLE_STATE.cs" />
+    <Compile Include="EfiSharp\Console\EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL.cs" />
+    <Compile Include="EfiSharp\Console\EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.cs" />
+    <Compile Include="EfiSharp\Console\KeyShiftState.cs" />
+    <Compile Include="EfiSharp\Console\SIMPLE_TEXT_OUTPUT_MODE.cs" />
+    <Compile Include="EfiSharp\EFI_BOOT_SERVICES.cs" />
+    <Compile Include="EfiSharp\EFI_EVENT.cs" />
+    <Compile Include="EfiSharp\EFI_GLOBAL.cs" />
+    <Compile Include="EfiSharp\EFI_GUID.cs" />
+    <Compile Include="EfiSharp\EFI_HANDLE.cs" />
+    <Compile Include="EfiSharp\EFI_LOADED_IMAGE_PROTOCOL.cs" />
+    <Compile Include="EfiSharp\EFI_LOCATE_SEARCH_TYPE.cs" />
+    <Compile Include="EfiSharp\EFI_MEMORY_TYPE.cs" />
+    <Compile Include="EfiSharp\EFI_OPEN_PROTOCOL.cs" />
+    <Compile Include="EfiSharp\EFI_RNG_ALGORITHM.cs" />
+    <Compile Include="EfiSharp\EFI_RNG_PROTOCOL.cs" />
+    <Compile Include="EfiSharp\EFI_SERIAL_IO.cs" />
+    <Compile Include="EfiSharp\EFI_SIMPLE_TEXT_INPUT_PROTOCOL.cs" />
+    <Compile Include="EfiSharp\EFI_STATUS.cs" />
+    <Compile Include="EfiSharp\EFI_SYSTEM_TABLE.cs" />
+    <Compile Include="EfiSharp\EFI_TABLE_HEADER.cs" />
+    <Compile Include="EfiSharp\Queue.cs" />
+    <Compile Include="EfiSharp\UefiApplication.cs" />
+    <Compile Include="EfiSharp\Windbg\HvDef.cs" />
+    <Compile Include="EfiSharp\Windbg\PELoader.cs" />
+    <Compile Include="EfiSharp\Windbg\Vmbus.cs" />
+    <Compile Include="EfiSharp\Windbg\Windbg.cs" />
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <DirectPInvoke Include="NativeUefi" />
+    <NativeLibrary Include="NativeUefi.lib" />
+    <LinkerArg Include="/VERBOSE" />
+    <LinkerArg Include="/LIBPATH:..\\x64\\Release" />
+    <LinkerArg Include="/NODEFAULTLIB" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.19" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <!-- The project file pretends this is .NET, but it's not .NET. Remove all assembly references the .NET SDK added. -->
+  <Target Name="CustomizeReferences" BeforeTargets="BeforeCompile" AfterTargets="FindReferenceAssembliesForReferences">
+    <ItemGroup>
+      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" />
+      <ReferencePath Remove="@(ReferencePath)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The AOT compiler would want to mirror these as AppContext switches. Prevent that. -->
+  <Target Name="RemoveHostConfigurationOptions" BeforeTargets="WriteIlcRspFileForCompilation" DependsOnTargets="PrepareForILLink">
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Remove="@(RuntimeHostConfigurationOption)" />
+    </ItemGroup>
+  </Target>
+ 
+  <Target Name="RunCustomScript" AfterTargets="Publish">
+    <Message Text="ECHO publish action has been called" Importance="high" />
+    <Exec command="E:\git\UefiAotHyperV\WindbgUefiSharp\publish.bat" />
+  </Target>
+ 
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="&quot;C:\Windows\System32\taskkill.exe&quot; /f /im vmwp.exe&#xD;&#xA;&quot;C:\Windows\System32\taskkill.exe&quot; /f /im windbg.exe&#xD;&#xA;exit 0" />
+  </Target>
+
+</Project>
