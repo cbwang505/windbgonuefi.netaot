@@ -7,7 +7,7 @@
 启动方式
 
 
-pipe.exe spy windbg bacnet auto testuefidbgvhdxv2
+pipe.exe spy windbg bacnet auto vmname
 
 
 ![1](img/1.png)
