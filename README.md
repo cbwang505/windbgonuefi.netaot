@@ -6,20 +6,20 @@
 
 ## 简介 ## 
 
-笔者实现了一款采用.NET NativeAOT模式开发运行在Windows Hyper-V Uefi虚拟机上基于COM命名管道或者Vmbus通道的windbg调试协议引擎.
+笔者实现了一款采用.NET NativeAOT模式开发运行在Windows Hyper-V Uefi虚拟机上基于Vmbus通道的windbg调试协议引擎.
 NativeAOT是.NET中一款将.NET程序集编译为原生二进制指令的编译模式,这种模式将.NET 带到了无需.NET Framework依赖即不允许JIT编译器的平台
-比如uef或windos内核驱动或嵌入式设备或桌面程序等原生二进制指令目标平台.
+比如uefi或Windows内核驱动或嵌入式设备或桌面程序等原生二进制指令目标平台.
 笔者工具在原.NET NativeAOT项目的基础上拓展了动态接口的多态继承绑定实现,
-还添加了执行IDT异常回调的模拟vcruntime实现的c++异常捕获特性,解决了在uefi程序运行过程中的不可预知的内部原生函数抛出异常处理的缓解措施.
+还添加了执行IDT异常回调的模拟vcruntime实现的c++异常捕获处理特性,解决了在uefi程序运行过程中的不可预知的内部原生函数抛出异常处理的缓解措施.
 笔者程序实现的windbg调试协议支持插件模式提供给后续的uefi应用程序调用插件绑定的接口于windbg调试引擎交互.
 windbg调试器运行在hyper-v的宿主机上,通过代理程序中间人模式转发windbg内核命名管道调试数据适配到目的接口实现调试uefi程序,
 记录或者实时捕捉调试数据到wireshark解析插件分析.
 
 ## NativeAOT模式动态接口的多态继承绑定实现方式分析 ## 
 
-.NET NativeAOT程序的运行时动态接口的多态继承绑定结构信息有.NET编译器在编译时生成存储在PE结构中的InterfaceDispatchCell结构体中,在每次需要进行动态接口转换的过程中
-调用RhpInitialDynamicInterfaceDispatch函数实现InterfaceDispatchCell结构体由r10寄存器传入,其中m_pStub指向RhpInitialDynamicInterfaceDispatch,m_pCache指向DispatchCellInfo结构体指针,
-这个转换需要用到存入寄存器的值rcx寄存器指向的派生类this指针的第一个字段也就是MethodTable虚表用于确定派生类的基类绑定信息DynamicDispatchMapTable的相关属性.
+.NET NativeAOT程序的运行时动态接口的多态继承绑定结构信息由.NET编译器在编译时生成存储在PE结构中的InterfaceDispatchCell结构体中,在每次需要进行动态接口转换的过程中
+会调用RhpInitialDynamicInterfaceDispatch函数实现InterfaceDispatchCell结构体由r10寄存器传入,其中m_pStub指向RhpInitialDynamicInterfaceDispatch,m_pCache指向DispatchCellInfo结构体指针,
+这个转换需要用到存入寄存器的值rcx寄存器指向的派生类this指针,它的第一个字段也就是MethodTable虚表指针用于确定派生类的多态基类绑定信息DynamicDispatchMapTable的相关属性.
 而这个绑定信息结合最终需要转换的接口的DispatchCellInfo中指定的InterfaceType和InterfaceSlot,也就是目标接口类型和多态继承绑定的接口索引匹配派生类实现的接口信息.
 如果找到的接口实现信息符合转换条件就会返回接口的MethodTable中实现的重载虚函数目标地址由rax返回,控制流跳转到rax实现动态接口的实现分发.
 ```
@@ -71,6 +71,21 @@ if (pTgtType->HasDispatchMap)
                         return pTgtType->GetVTableStartAddress()[(int)implSlotNumber];
                     }
 }
+private unsafe static IntPtr RhpCidResolve(object pObject, ref DispatchCellInfo cellInfo)
+{
+    MethodTable* pInstanceType = pObject.GetMethodTable();
+    if (cellInfo.CellType == DispatchCellType.InterfaceAndSlot)
+    {
+        MethodTable* pResolvingInstanceType = pInstanceType;   
+        IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType, cellInfo.InterfaceType, cellInfo.InterfaceSlot, null);      
+        return pTargetCode;
+    }
+    if (cellInfo.CellType == DispatchCellType.VTableOffset)
+    {
+        return *(IntPtr*)((byte*)pInstanceType + cellInfo.VTableOffset);
+    }
+    return IntPtr.Zero;
+}
 RhpInitialDynamicInterfaceDispatch PROC
 sub     rsp, 78h
 mov     [rsp+80h], rcx
@@ -101,20 +116,23 @@ cleanup:
 ret
 RhpInitialDynamicInterfaceDispatch ENDP
 ```
-.NET NativeAOT程序中windows桌面程序的动态接口分发实现由.NET编译器内嵌的运行时静态库库的TypeManager类实现,笔者的uefi项目并没有依赖于编译器提供的编译扩展运行时支持,
+.NET NativeAOT程序中windows桌面程序的默认动态接口分发实现由.NET编译器内嵌的运行时静态库库的TypeManager类实现,笔者的uefi项目并没有依赖于编译器提供的编译扩展运行时支持,
 通过手动方式实现,TypeManager类实现实际上是由一个包含于模块基址和一个指向pe结构中一个名为ReadyToRunSectionType.InterfaceDispatchTable节的分发结构体表组成.
-只需要构造这样一个结构体放入ReadyToRunSectionType.TypeManagerIndirection节的首地址就可以完成,每个类虚表的默认的TypeManagerHandle.TypeManager字段就指向这个节的地址.
-有了这样一个结构体就可以在它的DispatchMap字段找到需要分发的目标类型DispatchMap分发信息.至此.NET的运行时动态接口的多态继承特性已经可以完美实现运行在uefi程序上.
-笔者使用这个特性实现了c#的IEnumerable接口为工程提供了一套类似linq的集合类型扩展方法实现.
+只需要构造这样一个结构体指针放入ReadyToRunSectionType.TypeManagerIndirection节的首地址就可以完成,编译器会绑定每个类虚表的默认的TypeManagerHandle.TypeManager字段就指向这个节的地址.
+有了这样一个结构体就可以在它的DispatchMap字段找到需要分发的目标类型DispatchMap分发信息包括接口和继承信息.最终找到目标接口实现
+至此.NET的运行时动态接口的多态继承特性已经可以完美实现运行在uefi程序上.
+笔者使用这个特性实现了c#的IEnumerable接口为工程提供了一套类似linq的集合类型扩展方法实现,对常用的linq函数基本上都提供了支持.
 笔者项目关闭了项目选项EnableDefaultCompileItems选项,重写了.net基类的运行时实现,只适配于编译器版本Microsoft.DotNet.ILCompiler Version=7.0.19版本
+笔者还修复了ReadyToRunSectionType.GCStaticRegion节数据,解决了无gc模式下,gc全局指针为空的报错问题,详见笔者项目RunGlobalPE函数实现.
+
 
 ## NativeAOT模式运行时栈回溯实现方式分析 ## 
 
 .NET NativeAOT程序运行时函数符号信息存储于pe节的ReadyToRunSectionType.BlobIdStackTraceMethodRvaToTokenMapping节中,需要在项目配置文件开启StackTraceSupport选项.
 相对于c编写的二进制程序,默认函数的符号信息存在于pdb文件中,二进制主程序不包含函数的符号信息,在没有pdb文件的情况下获取函数名等符号信息是不可行的.对于NativeAOT程序只要开启了开启StackTraceSupport选项,
-尽管会增加最后生成的二进制文件大小,但是对于异常的处理工作可以就可以实现在不需要pdb文件的情况下实现栈回溯的辅助功能.BlobIdStackTraceMethodRvaToTokenMapping节中节保存了所有运行时函数的rva信息,
-每个rva关联一个token组成一个字典结构,通过这个token可以在ReadyToRunSectionType.ReflectionMapBlobEmbeddedMetadata找到已明文存储的函数名的字符串数据,具体偏移量解码方式只需要调用微软官方的NativePrimitiveDecoder函数即可.
-在抛出异常是可以在idt中获取当前抛出异常原的栈rsp和函数地址rip,首先展示rip的函数信息,再从rsp向上遍历直到找到一个在缓存字典中符号的函数信息,就可以完整展示当前抛出异常时的栈回溯信息.
+尽管会增加最后生成的二进制文件大小,但是对于异常的处理工作可以就可以实现在不需要pdb文件的情况下实现栈回溯的辅助功能.BlobIdStackTraceMethodRvaToTokenMapping节中节保存了所有运行时函数的rva(相对偏移量)信息,
+每个rva关联一个token组成一个字典结构,通过这个token可以在ReadyToRunSectionType.ReflectionMapBlobEmbeddedMetadata找到以明文存储的函数名的字符串数据,具体偏移量解码方式只需要调用微软官方的NativePrimitiveDecoder函数即可.
+在抛出异常时可以在idt中获取当前抛出异常原的栈rsp和函数地址rip,首先展示rip的函数信息,再从rsp向上遍历直到找到一个在缓存字典中符号的函数信息,就可以完整展示当前抛出异常时的栈回溯信息.
 ```
 List<FunctionTraceMap> FunctionTokenMap = new List<FunctionTraceMap>();
 IntPtr pMap =StartupCodeHelpers.GetModuleSectionWithLength(moduleSeg, ReadyToRunSectionType.BlobIdStackTraceMethodRvaToTokenMapping, ref length);
@@ -168,13 +186,15 @@ for (int j = 0; j < len; j++)
 }
 ```
 笔者为字符串匹配提供了一个string.FromASCII函数,过滤了其中无效ASCII字符,只保留可打印的函数名字符串,具体源码可以在笔者开源项目中找到.
-这个栈回溯信息结合了下面节介绍的异常捕获处理为程序的调试工作提供了很好的辅助功能.
+这个栈回溯信息结合了下面节介绍的异常捕获处理为程序的调试工作提供了很好的辅助功能.栈回溯效果如图:
+![0](img/aot0.png)
 
 ## 模拟vcruntime实现的c++异常捕获特性分析 ## 
 
-C和C++程序都可以在x86平台指令集使用结构化异常处理（SEH）机制.
-C的异常处理SEH中的概念类似于C++异常中的概念，除了SEH使用__try、__except和__finally构造而不是C++异常中的try和catch.
-在在微软C++编译器（MSVC）中，为SEH实现了C++异常。但是写C++代码时,需要使用C++异常语法,SEH同样可以捕获C++异常,需要在vs从开启配置(配置属性->c/c++->启用c++异常->是但有seh异常(/EHA)).
+C和C++程序都可以在x86平台指令集使用结构化异常处理（structured exception handling SEH）机制.
+c的异常称为asynchronous structured exception,c++的异常称为synchronous structured exception
+C的异常处理SEH中的概念类似于C++异常中的概念，SEH使用__try、__except和__finally构造而不是C++异常中的try和catch.
+在微软C++编译器（MSVC）中，为SEH实现了C++异常。但是写C++代码时,需要使用C++异常语法,SEH同样可以捕获C++异常,c异常也同理,需要在vs从开启配置(配置属性->c/c++->代码生成->启用c++异常->是但有seh异常(/EHA)),这个选项可以同时捕获C和C++异常.
 下面这段代码展示一个一段简单C++异常语法.
 ```
 EXTERN_C EFI_STATUS OutputStringWrapper(IN CHAR16* buf)
@@ -184,14 +204,15 @@ EXTERN_C EFI_STATUS OutputStringWrapper(IN CHAR16* buf)
 	}
 	catch (...)
 	{
+	    //OutputStringWrapper$catch$0
 		Print(L"Exception OutputString Handler\r\n");
 	}
 	return 0;
 }
 ```
-对于上面这段函数默认会编译出OutputStringWrapper和OutputStringWrapper$catch$0两个内部的函数形式,前者用于在函数入口处理,后者用于在捕获异常时由栈迭代找到栈上的异常捕获函数跳转到这个异常捕获函数执行.
+对于上面这段函数默认会编译出OutputStringWrapper和OutputStringWrapper$catch$0两个内部的函数形式,前者用于在函数入口处理,后者用于在捕获异常时由栈迭代找到跳栈上的异常捕获函数转到这个异常捕获函数执行.
 运行时异常信息存在pe结构的EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION表OptionalHeader中,这个表中保存的是一个IMAGE_RUNTIME_FUNCTION_ENTRY数组具体结构如下,
-windbg提供一个功能用于异常结构的展示,运行效果如下
+windbg提供一个功能.fnent用于异常结构的展示,运行效果如下
 ```
 kd> .fnent nt!OutputStringWrapper
 Debugger function entry 00000145`3c7ce180 for:
@@ -208,14 +229,15 @@ Unwind info at 00000000`f676dbc8, 10 bytes
   handler routine: nt!__CxxFrameHandler4 (00000000`f6743360), data 2ebd8
   00: offs 9, unwind op 2, op info 4	UWOP_ALLOC_SMALL.
 ```
-这个结构包含了所有运行时函数的起始地址和结束地址,紧跟在其后的是一个指向UnwindData的PUNWIND_CODE指针偏移量,这个结构保存了当异常栈帧需要展开的时候需要在栈上开辟的空间和用于在栈上保存非易失寄存器值的
+这个结构包含了所有运行时函数的起始地址和结束地址RVA,紧跟在其后的是一个指向UnwindData的PUNWIND_CODE指针偏移量,这个结构保存了当异常栈帧需要展开的时候需要在栈上开辟的空间和用于在栈上保存非易失寄存器值的称为
 prolog(序言)和epilog(末言)由异常处理程序处理的结构化信息.prolog例程执行完成后执行PUNWIND_CODE尾部保存的真正的异常处理回调.
 一些典型的UNWIND_CODE包括：
 ALLOC_SMALL/LARGE（为局部参数分配小/大内存，例如sub rsp, 80h）
 PUSH_NONVOL（将非易失性寄存器推送到堆栈，例如push rdi）
 在开启的包含异常代码的x86平台程序时编译器默认会将异常处理回调绑定到一个__CxxFrameHandler4函数,
 这个函数默认在vcruntime.dll实现借助了ntdll的RtlVirtualUnwind系统自带异常栈帧展开功能找到异常函数对于的捕获函数,并跳转到捕获函数执行.这个过程实际上是对于PUNWIND_CODE尾部保存回调后面的ExceptionData数据的展开,
-可以在开源的vcruntime运行库源码中找到实现,展开数据后最终得到的一个TryBlockMap4._handler.dispOfHandler就是异常捕获处理的函数地址.笔者是uefi程序没有vc运行时,采用手动方式实现,具体方法如下.
+可以在开源的vcruntime运行库[源码](https://github.com/Chuyu-Team/VC-LTL/tree/master)
+中找到实现,展开数据后最终得到的一个TryBlockMap4._handler.dispOfHandler就是异常捕获处理的函数地址OutputStringWrapper$catch$0.笔者是uefi程序没有vc运行时,采用手动方式实现,具体方法如下.
 ```
 typedef struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
 	DWORD BeginAddress;
@@ -269,8 +291,8 @@ EXTERN_C  UINT64 EFIAPI FindRuntimeFunction(UINT64 modbase,UINT64 fakefun)
 	return 0;
 }
 ```
-在抛出异常是可以在idt中获取当前抛出异常原的栈rsp和函数地址rip,对x86windows应用程序由内核idt分发到teb结构的异常处理分发函数执行,根据以上代码在异常rip找到异常捕获回调,根据rsp向上迭代直到找到一个符号条件运行时函数PIMAGE_RUNTIME_FUNCTION作为当前异常捕获回调的返回地址,
-当前迭代的这个rsp也同样作为异常捕获回调分配的rsp地址,对这个rsp完成prolog例程执行后,执行后异常捕获回调会自动从栈中弹出异常捕获函数所在主函数的上层调用地址,返回到这个地址继续执行程序.
+在抛出异常时可以在idt中获取当前抛出异常原的栈rsp和函数地址rip,对于x86windows应用程序由内核idt分发到用户层teb结构的异常处理分发函数执行,不过在uefi环境并没有teb.根据以上代码在异常rip找到异常捕获回调,根据rsp向上迭代直到找到一个符合条件运行时函数PIMAGE_RUNTIME_FUNCTION作为当前异常捕获回调的上层函数返回地址,
+当前迭代到的这个rsp它的值也同样作为异常捕获回调分配的rsp地址,对这个rsp完成prolog例程执行后,执行完异常捕获回调会自动从栈中弹出异常捕获函数所在主函数的上层调用地址,返回到这个地址继续执行程序,实现了异常修复工作.
 至此就完成了实现在uefi平台上模拟vcruntime实现的c++异常捕获特性功能.这种方式并不和调试器模式冲突,可以在idt中判断异常的int3向量触发的话中断到调试器,如果异常处理函数未找到或者处理失败情况下中断到调试器,
 否则调用异常捕获回调函数恢复继续执行.
 
@@ -279,7 +301,7 @@ EXTERN_C  UINT64 EFIAPI FindRuntimeFunction(UINT64 modbase,UINT64 fakefun)
 笔者用.net代码重构了用c代码实现的vmbus通道接口功能,hyper-v包含很多内置的uefi模块,同样需要使用simp和siep通信页面,所以在运行笔者uefi程序时获取这些msr寄存器是有值的,
 使用原来的共享页面有个问题就是当退出笔者uefi程序的时候由于旧sint被笔者使用了导致内置的uefi模块的控制台功能也需要借助通道页面通信,存在冲突问题导致控制台卡住.
 但是笔者后来发现了一种方法可以解决这个问题正常退出的uefi控制台,具体实现方式是如果旧uefi模块通道的sint为2,笔者使用一个新的sint比如说5,为这个sint分配一个新的idt回调向量同样可以收到vsp发来的触发通道消息,
-在CHANNELMSG_INITIATE_CONTACT协商消息中使用绑定这个sint,这样可以在回复消息中vmbus_channel_version_response->messageConnectionId得到一个新的连接id,
+在CHANNELMSG_INITIATE_CONTACT协商消息中使用绑定这个sint,这样可以在回复消息中vmbus_channel_version_response->messageConnectionId得到一个新的event连接id,
 这样就可以用在后续的调用HvCallPostMessage使用使用这个新的连接id,后续通信的gpadl页面使用新申请的页面,实现了不和内置的uefi模块同时共享通道冲突解决方法.
 笔者uefi程序退出后控制台可以正常使用,对后续其他uefi程序没有影响.
 
@@ -289,7 +311,9 @@ Vmbus通道分析见作者上篇文章[windbg原生调试协议在hyper-v平台u
 
 ## 编译运行方式 ## 
 
-选择一种通用模式编译工程,使用vs2022编译,不需要依赖edk2静态库文件,笔者项目只支持hyper-v不支持vmware和qemu
+这个项目是一种uefi驱动编译工程,使用vs2022编译,工程生成后选择发布NativeAOT模式,不需要依赖edk2静态库文件,笔者项目只支持hyper-v不支持vmware和qemu
+
+如果看到Windbg\bin\Release\net7.0\publish\win-x64\Windbg.exe文件表示发布成功
 
 DiskGenius新建虚拟硬盘文件.img 自定义256mb 快速分区guid模式
 
@@ -305,9 +329,11 @@ esp分区添加
 
 \EFI\BOOT\startup.nsh
 
-内容如下,放入编译出来的windbg.efi
+内容如下
 
 load fs0:windbg.efi
+
+编译出来的windbg.efi放到esp分区根目录下
 
 可以使用[作者iso制作工具](https://github.com/cbwang505/UefiBootISOMaker/tree/main)制作iso
 
@@ -335,7 +361,7 @@ Copy-Item $uefiapp   -Destination "N:\"
 Dismount-VHD -Path  $vhdxpath
 ```
 
-更新vhdx文件中的主程序windbg.efi可以参考笔者脚本
+更新vhdx文件中的主程序windbg.efi可以参考笔者bat脚本,vhdx挂载k盘
 
 ```
 "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -exec bypass -Command "Stop-VM -Name hv -TurnOff -Force"
@@ -366,8 +392,12 @@ pathto\bin\x64\Debug\pipe.exe spy windbg bacnet auto vmname
 
 以下是笔者工具运行的效果,如图:
 
-![1](img/1.png)
-![2](img/2.png)
+![1](img/aot1.png)
+
+![2](img/aot2.png)
+
+![3](img/aot3.png)
+
 
 ##  相关引用 ##
 
@@ -406,6 +436,8 @@ pathto\bin\x64\Debug\pipe.exe spy windbg bacnet auto vmname
 [vcruntime实现的c++异常捕获](https://learn.microsoft.com/en-us/cpp/build/exception-handling-x64?view=msvc-170)
 
 [UNWIND_INFO分析](https://codemachine.com/articles/x64_deep_dive.html)
+
+[windbg原生调试协议在hyper-v平台uefi上多种实现方式探索](https://bbs.kanxue.com/thread-281707.htm)
 
 [作者iso制作工具](https://github.com/cbwang505/UefiBootISOMaker/tree/main)
 
