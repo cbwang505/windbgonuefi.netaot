@@ -25,6 +25,9 @@ namespace EfiSharp
 
         [DllImport("NativeUefi", EntryPoint = "KdpAddBreakpoint")]
         public static extern UInt32 KdpAddBreakpoint(IntPtr Address);
+        
+        [DllImport("NativeUefi", EntryPoint = "ConfigCommandStepping")]
+        public static extern void ConfigCommandStepping(bool valset,ref CONTEXT Context);
 
         [RuntimeExport("KdpSymbolReportSynthetic")]
         public static unsafe KCONTINUE_STATUS
@@ -244,6 +247,15 @@ namespace EfiSharp
         }
 
 
+        public static unsafe KCONTINUE_STATUS KdpDbgKdContinueApi2(DBGKD_MANIPULATE_STATE64* pManipulateState, ref CONTEXT Context)
+        {
+            bool valset = pManipulateState->Continue2.ControlSet.TraceFlag > 0;
+            ConfigCommandStepping(valset, ref Context);
+            Windbg.KdpSendControlPacket(HvDef.PACKET_TYPE_KD_ACKNOWLEDGE, Windbg.CurrentPacketId);
+
+            return KCONTINUE_STATUS.ContinueNextProcessor;
+
+        }
         public static unsafe KCONTINUE_STATUS KdpSetContextEx(DBGKD_MANIPULATE_STATE64* pManipulateState)
         {
 
@@ -461,6 +473,12 @@ namespace EfiSharp
                             Console.WriteLine("DbgKdGetContextExApi");
                             status = KdpGetContextEx(pManipulateState,ref Context);
                         }
+                        else if (pManipulateState->ApiNumber == HvDef.DbgKdContinueApi2)
+                        {
+                            Console.WriteLine("DbgKdContinueApi2");
+                            status = KdpDbgKdContinueApi2(pManipulateState, ref Context);
+                            break;
+                        }
                         else if (pManipulateState->ApiNumber == HvDef.DbgKdSetContextApi| pManipulateState->ApiNumber == HvDef.DbgKdSetContextExApi)
                         {
                             Console.WriteLine("KdpSetContextEx");
@@ -477,7 +495,7 @@ namespace EfiSharp
                 }
             }
 
-            return KCONTINUE_STATUS.ContinueError;
+            return KCONTINUE_STATUS.ContinueNextProcessor;
         }
 
         public static unsafe void KdpSymbolWindbg(WINDBG_SYMBOLS_INFO SymbolInfo, bool sendonce)

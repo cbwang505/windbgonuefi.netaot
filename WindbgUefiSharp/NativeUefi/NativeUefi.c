@@ -1125,6 +1125,31 @@ CommandSteppingCleanup(
 	return;
 }
 
+void ConfigCommandStepping(IN BOOLEAN val, IN DEBUG_CPU_CONTEXT* CpuContext)
+{
+	if (val)
+	{
+		/* Enable TF */
+		//Context->EFlags |= EFLAGS_TF;
+		if (CpuContext)
+		{
+
+			CommandStepping(CpuContext);
+		}
+	}
+	else
+	{
+		/* Remove it */
+		//Context->EFlags &= ~EFLAGS_TF;
+		if (CpuContext)
+		{
+
+			CommandSteppingCleanup(CpuContext);
+		}
+	}
+	return;
+}
+
 static void HVGetApicBase()
 {
 	MSR_IA32_APIC_BASE_REGISTER ApicBaseMsr = { 0 };

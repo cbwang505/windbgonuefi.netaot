@@ -825,9 +825,25 @@ namespace EfiSharp
         public UInt32 ByteCount;
         public UInt32 BytesCopied;
     }
-  
 
-    [StructLayout(LayoutKind.Explicit, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct DBGKD_CONTROL_SET
+    {
+        public UInt32 TraceFlag;
+        public UInt64 Dr7;
+        public UInt64 CurrentSymbolStart;
+        public UInt64 CurrentSymbolEnd;
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct DBGKD_CONTINUE2
+    {
+        public UInt32 ContinueStatus;
+
+        public DBGKD_CONTROL_SET ControlSet;
+    
+    }
+
+[StructLayout(LayoutKind.Explicit, Pack = 1)]
     public unsafe struct DBGKD_MANIPULATE_STATE64
     {
         [FieldOffset(0)] public UInt32 ApiNumber;
@@ -841,6 +857,7 @@ namespace EfiSharp
         [FieldOffset(0x10)] public DBGKD_WRITE_BREAKPOINT64 WriteBreakPoint;
         [FieldOffset(0x10)] public DBGKD_RESTORE_BREAKPOINT RestoreBreakPoint;
         [FieldOffset(0x10)] public DBGKD_CONTEXT_EX ContextEx;
+        [FieldOffset(0x10)] public DBGKD_CONTINUE2 Continue2;
         [FieldOffset(0x37)] public byte pad;
     }
 }
